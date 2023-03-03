@@ -1,12 +1,11 @@
 import hashlib
-import urllib.request
 from asyncio import sleep, create_task
 from os import environ
 from random import randrange
 from typing import List, Optional, Dict
 
 import feedparser
-from discord import Client, Intents, Message, Status, ActivityType, Activity, TextChannel
+from discord import Client, Intents, Message, Status, ActivityType, Activity
 
 
 def verbose(*args) -> None:
