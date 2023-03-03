@@ -130,7 +130,7 @@ class RssBot(Client):
     async def on_ready(self) -> None:
         """Called when the bot is ready to start."""
 
-        print(f"logged in as {self.user}!")
+        print(f"Logged in as {self.user}!")
 
         await self.update_status()
 
@@ -259,14 +259,7 @@ To list all feeds in this channel, try "<@1080989856248893521> list"
 
 if __name__ == "__main__":
     token = environ["DISCORD_TOKEN"]
-    # channels = [
-    #     int(channel_str.strip())
-    #     for channel_str in environ["DISCORD_CHANNELS"].split(",")
-    # ]
-    print(f"loaded configuration from environment:")
-    print(f"     DISCORD_TOKEN=***")
-    # print(f"  DISCORD_CHANNELS={','.join(map(str, channels))}")
+    print("loaded configuration from environment...")
     print("connecting to Discord...")
-    # OobClient(channels).run(token)
     # RssBot(1080991601502986331, ["https://samasaur1.github.io/feed.xml", "https://eclecticlight.co/category/updates/feed/atom/"]).run(token)
     RssBot(1080991601502986331, []).run(token)
