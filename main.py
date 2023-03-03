@@ -121,8 +121,9 @@ class RssBot(Client):
 
     async def update_status(self) -> None:
         feed_count = len(self.feeds)
+        stat = Status.idle if feed_count == 0 else Status.online
         fstr = "1 feed" if feed_count == 1 else f"{feed_count} feeds"
-        await self.change_presence(status=Status.idle, activity=Activity(name=fstr, type=ActivityType.watching))
+        await self.change_presence(status=stat, activity=Activity(name=fstr, type=ActivityType.watching))
 
         self.schedule_updates()
 
@@ -211,7 +212,6 @@ To list all feeds in this channel, try "<@1080989856248893521> list"
         async def task():
             # await sleep(15)
 
-            await self.change_presence(status=Status.online)
             for feed in self.feeds:
                 try:
                     if feed not in self.feed_data:
