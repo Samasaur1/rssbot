@@ -232,8 +232,8 @@ To list all feeds in this channel, try "<@1080989856248893521> list"
                     print(f"Unexpected {err=}, {type(err)=}")
                     raise
 
-            # await sleep(5 * 60) #5 minutes
-            await sleep(45) #5 minutes
+            await sleep(5 * 60) #5 minutes
+            # await sleep(45) #5 minutes
 
             self.schedule_updates()
 
