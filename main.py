@@ -154,13 +154,13 @@ class RssBot(Client):
 
         if isinstance(message.channel, DMChannel):
             def log(s: str):
-                print(f"{s} in DM with {message.author} ({message.channel.id})")
+                print(f"[{datetime.now(timezone.utc).isoformat()}] {s} in DM with {message.author} ({message.channel.id})")
         elif isinstance(message.channel, GroupChannel):
             def log(s: str):
-                print(f"{s} in group DM {f'{message.channel.name} ({message.channel.id})' if message.channel.name else message.channel.id} from {message.author}")
+                print(f"[{datetime.now(timezone.utc).isoformat()}] {s} in group DM {f'{message.channel.name} ({message.channel.id})' if message.channel.name else message.channel.id} from {message.author}")
         else:
             def log(s: str):
-                print(f"{s} to #{message.channel.name} ({message.channel.id}) from {message.author}")
+                print(f"[{datetime.now(timezone.utc).isoformat()}] {s} to #{message.channel.name} ({message.channel.id}) from {message.author}")
 
         # if message.author.id != 377776843425841153:
         #     print(f"Request from {message.author} ({message.author.id})")
