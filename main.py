@@ -152,6 +152,9 @@ class RssBot(Client):
         if message.author == self.user:
             return
 
+        if not self.user.mentioned_in(message):
+            return
+
         if isinstance(message.channel, DMChannel):
             def log(s: str):
                 print(f"[{datetime.now(timezone.utc).isoformat()}] {s} in DM with {message.author} ({message.channel.id})")
@@ -167,83 +170,82 @@ class RssBot(Client):
         #     await say(message, "Unauthorized user")
         #     return
 
-        if self.user.mentioned_in(message):
-            msg = message.content.split(">", maxsplit=1)[1].strip(" ")
-            _msg = msg.split(" ", maxsplit=1)
-            cmd = _msg[0]
-            if cmd == "add":
-                url = _msg[1]
-                log(f"Request to add '{url}'")
-                if url in self.feeds:
-                    if message.channel.id in self.feeds[url]:
-                        await say(message, f"Already watching {url} in this channel")
-                    else:
-                        self.feeds[url].append(message.channel.id)
-                        await say(message, f"Now watching {url} in this channel")
+        msg = message.content.split(">", maxsplit=1)[1].strip(" ")
+        _msg = msg.split(" ", maxsplit=1)
+        cmd = _msg[0]
+        if cmd == "add":
+            url = _msg[1]
+            log(f"Request to add '{url}'")
+            if url in self.feeds:
+                if message.channel.id in self.feeds[url]:
+                    await say(message, f"Already watching {url} in this channel")
                 else:
-                    if validators.url(url):
-                        self.feeds[url] = [message.channel.id]
-                        await self.update_status()
-                        await say(message, f"Now watching {url} in this channel")
-                    else:
-                        await say(message, f"Not a valid URL")
-            elif cmd == "remove":
-                url = _msg[1]
-                log(f"Request to remove '{url}'")
-                if url in self.feeds and message.channel.id in self.feeds[url]:
-                    self.feeds[url].remove(message.channel.id)
-                    print("Found")
-                    if len(self.feeds[url]) == 0:
-                        del self.feeds[url]
-                        print("Was last url for feed, so feed is removed")
-                        await self.update_status()
-                    await say(message, f"Removed {url} from the feeds for this channel")
+                    self.feeds[url].append(message.channel.id)
+                    await say(message, f"Now watching {url} in this channel")
+            else:
+                if validators.url(url):
+                    self.feeds[url] = [message.channel.id]
+                    await self.update_status()
+                    await say(message, f"Now watching {url} in this channel")
                 else:
-                    await say(message, f"Could not find {url} in the feeds for this channel")
-                    print("Not found")
-            elif cmd == "list":
-                log(f"Request to list feeds")
-                feeds_in_channel = []
-                for feed in self.feeds:
-                    if message.channel.id in self.feeds[feed]:
-                        feeds_in_channel.append(feed)
-                if len(feeds_in_channel) == 0:
-                    await say(message, "No feeds in this channel")
-                    return
-                fstr = "\n".join(feeds_in_channel)
-                await say(message, f"""
+                    await say(message, f"Not a valid URL")
+        elif cmd == "remove":
+            url = _msg[1]
+            log(f"Request to remove '{url}'")
+            if url in self.feeds and message.channel.id in self.feeds[url]:
+                self.feeds[url].remove(message.channel.id)
+                print("Found")
+                if len(self.feeds[url]) == 0:
+                    del self.feeds[url]
+                    print("Was last url for feed, so feed is removed")
+                    await self.update_status()
+                await say(message, f"Removed {url} from the feeds for this channel")
+            else:
+                await say(message, f"Could not find {url} in the feeds for this channel")
+                print("Not found")
+        elif cmd == "list":
+            log(f"Request to list feeds")
+            feeds_in_channel = []
+            for feed in self.feeds:
+                if message.channel.id in self.feeds[feed]:
+                    feeds_in_channel.append(feed)
+            if len(feeds_in_channel) == 0:
+                await say(message, "No feeds in this channel")
+                return
+            fstr = "\n".join(feeds_in_channel)
+            await say(message, f"""
 **Feeds in this channel**:
 {fstr}
 """, 5)
-            elif cmd == "help":
-                log(f"Request for help")
-                await say(message, """
+        elif cmd == "help":
+            log(f"Request for help")
+            await say(message, """
 To add a feed, try "<@1080989856248893521> add https://samasaur1.github.io/feed.xml"
 To remove a feed, try "<@1080989856248893521> remove https://samasaur1.github.io/feed.xml"
 To list all feeds in this channel, try "<@1080989856248893521> list"
 """, 5)
-            elif cmd == "status":
-                log(f"Request for status")
-                if message.author.id != 377776843425841153:
-                    await say(message, "Unauthorized user")
-                    # return
-                td = datetime.now(timezone.utc) - self.last_check
-                s = f"""
+        elif cmd == "status":
+            log(f"Request for status")
+            if message.author.id != 377776843425841153:
+                await say(message, "Unauthorized user")
+                return
+            td = datetime.now(timezone.utc) - self.last_check
+            s = f"""
 **Status:**
 Time since last check: {td}
 Estimated time until next check (approximate): {timedelta(seconds=RSS_FETCH_INTERVAL - td.total_seconds())}
 Channels watching feed(s): {self.feeds.__repr__()}
 """
-                await say(message, s, 1)
-            elif cmd == "dump":
-                log(f"Request to dump")
-                if message.author.id != 377776843425841153:
-                    await say(message, "Unauthorized user")
-                    # return
-                print("Unimplemented")
-            else:
-                log(f"Unknown command")
-                await say(message, "Unknown command (try \"<@1080989856248893521> help\")")
+            await say(message, s, 1)
+        elif cmd == "dump":
+            log(f"Request to dump")
+            if message.author.id != 377776843425841153:
+                await say(message, "Unauthorized user")
+                return
+            print("Unimplemented")
+        else:
+            log(f"Unknown command")
+            await say(message, "Unknown command (try \"<@1080989856248893521> help\")")
 
     def schedule_updates(self) -> None:
         async def task():
