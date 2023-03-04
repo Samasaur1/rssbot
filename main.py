@@ -1,3 +1,4 @@
+from datetime import datetime, timezone, timedelta
 import hashlib
 from asyncio import sleep, create_task
 from os import environ
@@ -8,6 +9,7 @@ import feedparser
 import validators
 from discord import Client, Intents, Message, Status, ActivityType, Activity, DMChannel, GroupChannel
 
+RSS_FETCH_INTERVAL = 5 * 60 # 5 minutes
 
 def verbose(*args) -> None:
     """Print the specified args only if $VERBOSE is set."""
@@ -108,8 +110,14 @@ class FeedData:
 
 
 async def say(message: Message, msg: str, maxrange: int = 3) -> None:
+    if maxrange < 1:
+        sleep_time = 0
+    elif maxrange == 1:
+        sleep_time = 1
+    else:
+        sleep_time = randrange(1, maxrange)
     async with message.channel.typing():
-        await sleep(randrange(1, maxrange))
+        await sleep(sleep_time)
         await message.reply(msg)
 
 
@@ -214,6 +222,25 @@ To add a feed, try "<@1080989856248893521> add https://samasaur1.github.io/feed.
 To remove a feed, try "<@1080989856248893521> remove https://samasaur1.github.io/feed.xml"
 To list all feeds in this channel, try "<@1080989856248893521> list"
 """, 5)
+            elif cmd == "status":
+                log(f"Request for status")
+                if message.author.id != 377776843425841153:
+                    await say(message, "Unauthorized user")
+                    # return
+                td = datetime.now(timezone.utc) - self.last_check
+                s = f"""
+**Status:**
+Time since last check: {td}
+Estimated time until next check (approximate): {timedelta(seconds=RSS_FETCH_INTERVAL - td.total_seconds())}
+Channels watching feed(s): {self.feeds.__repr__()}
+"""
+                await say(message, s, 1)
+            elif cmd == "dump":
+                log(f"Request to dump")
+                if message.author.id != 377776843425841153:
+                    await say(message, "Unauthorized user")
+                    # return
+                print("Unimplemented")
             else:
                 log(f"Unknown command")
                 await say(message, "Unknown command (try \"<@1080989856248893521> help\")")
@@ -242,8 +269,8 @@ To list all feeds in this channel, try "<@1080989856248893521> list"
                     print(f"Unexpected {err=}, {type(err)=}")
                     raise
 
-            await sleep(5 * 60) #5 minutes
-            # await sleep(45) #5 minutes
+            await sleep(RSS_FETCH_INTERVAL)
+            # await sleep(45) #45 seconds
 
             self.schedule_updates()
 
@@ -265,6 +292,7 @@ To list all feeds in this channel, try "<@1080989856248893521> list"
 
         delay_task = create_task(task(), name="rssbot.update")
         self.task = delay_task
+        self.last_check = datetime.now(timezone.utc)
 
 
 if __name__ == "__main__":
