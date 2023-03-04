@@ -5,7 +5,7 @@ from random import randrange
 from typing import List, Optional, Dict
 
 import feedparser
-from discord import Client, Intents, Message, Status, ActivityType, Activity
+from discord import Client, Intents, Message, Status, ActivityType, Activity, DMChannel, GroupChannel
 
 
 def verbose(*args) -> None:
@@ -148,13 +148,23 @@ class RssBot(Client):
             await say(message, "Unauthorized user")
             return
 
+        if isinstance(message.channel, DMChannel):
+            def log(s: str):
+                print(f"{s} in DM with {message.author} ({message.channel.id})")
+        elif isinstance(message.channel, GroupChannel):
+            def log(s: str):
+                print(f"{s} in group DM {f'{message.channel.name} ({message.channel.id})' if message.channel.name else message.channel.id} from {message.author}")
+        else:
+            def log(s: str):
+                print(f"{s} to #{message.channel.name} ({message.channel.id}) from {message.author}")
+
         if self.user.mentioned_in(message):
             msg = message.content.split(">", maxsplit=1)[1].strip(" ")
             _msg = msg.split(" ", maxsplit=1)
             cmd = _msg[0]
             if cmd == "add":
                 url = _msg[1]
-                print(f"Request to add '{url}' to #{message.channel.name} ({message.channel.id}) from {message.author}")
+                log(f"Request to add '{url}'")
                 if url in self.feeds:
                     if message.channel.id in self.feeds[url]:
                         await say(message, f"Already watching {url} in this channel")
@@ -171,7 +181,7 @@ class RssBot(Client):
                         await say(message, f"Not a valid URL")
             elif cmd == "remove":
                 url = _msg[1]
-                print(f"Request to remove '{url}' from #{message.channel.name} ({message.channel.id}) from {message.author}")
+                log(f"Request to remove '{url}'")
                 if url in self.feeds and message.channel.id in self.feeds[url]:
                     self.feeds[url].remove(message.channel.id)
                     print("Found")
@@ -184,7 +194,7 @@ class RssBot(Client):
                     await say(message, f"Could not find {url} in the feeds for this channel")
                     print("Not found")
             elif cmd == "list":
-                print(f"Request to list feeds in #{message.channel.name} ({message.channel.id}) from {message.author}")
+                log(f"Request to list feeds")
                 feeds_in_channel = []
                 for feed in self.feeds:
                     if message.channel.id in self.feeds[feed]:
@@ -198,14 +208,14 @@ class RssBot(Client):
 {fstr}
 """, 5)
             elif cmd == "help":
-                print(f"Request for help in #{message.channel.name} ({message.channel.id}) from {message.author}")
+                log(f"Request for help")
                 await say(message, """
 To add a feed, try "<@1080989856248893521> add https://samasaur1.github.io/feed.xml"
 To remove a feed, try "<@1080989856248893521> remove https://samasaur1.github.io/feed.xml"
 To list all feeds in this channel, try "<@1080989856248893521> list"
 """, 5)
             else:
-                print(f"Unknown command in #{message.channel.name} ({message.channel.id}) from {message.author}")
+                log(f"Unknown command")
                 await say(message, "Unknown command (try \"<@1080989856248893521> help\")")
 
     def schedule_updates(self) -> None:
