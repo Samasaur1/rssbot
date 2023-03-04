@@ -249,13 +249,19 @@ Channels watching feed(s): {self.feeds.__repr__()}
         async def task():
             # await sleep(15)
 
+            verbose("Checking feeds...")
             for feed in self.feeds:
+                verbose(f"...{feed}")
                 try:
                     if feed not in self.feed_data:
+                        verbose("(first time checking; marking all posts as read)")
                         self.feed_data[feed] = FeedData(feed)
                         self.feed_data[feed].new_entries()
                         # Assume that newly-added blogs have had all their posts read already
                     entries = self.feed_data[feed].new_entries()
+                    verbose(f"{len(entries)} entries")
+                    if len(entries) == 0:
+                        continue
                     for entry in entries:
                         print(f"New post on {feed}: {entry.output()}")
 
