@@ -5,6 +5,7 @@ from random import randrange
 from typing import List, Optional, Dict
 
 import feedparser
+import validators
 from discord import Client, Intents, Message, Status, ActivityType, Activity, DMChannel, GroupChannel
 
 
@@ -143,11 +144,6 @@ class RssBot(Client):
         if message.author == self.user:
             return
 
-        if message.author.id != 377776843425841153:
-            print(f"Request from {message.author} ({message.author.id})")
-            await say(message, "Unauthorized user")
-            return
-
         if isinstance(message.channel, DMChannel):
             def log(s: str):
                 print(f"{s} in DM with {message.author} ({message.channel.id})")
@@ -157,6 +153,11 @@ class RssBot(Client):
         else:
             def log(s: str):
                 print(f"{s} to #{message.channel.name} ({message.channel.id}) from {message.author}")
+
+        # if message.author.id != 377776843425841153:
+        #     print(f"Request from {message.author} ({message.author.id})")
+        #     await say(message, "Unauthorized user")
+        #     return
 
         if self.user.mentioned_in(message):
             msg = message.content.split(">", maxsplit=1)[1].strip(" ")
@@ -172,8 +173,7 @@ class RssBot(Client):
                         self.feeds[url].append(message.channel.id)
                         await say(message, f"Now watching {url} in this channel")
                 else:
-                    #TODO: check if URL
-                    if True:
+                    if validators.url(url):
                         self.feeds[url] = [message.channel.id]
                         await self.update_status()
                         await say(message, f"Now watching {url} in this channel")
