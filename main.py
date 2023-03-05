@@ -256,20 +256,23 @@ To list all feeds in this channel, try "<@1080989856248893521> list"
                 await say(message, "Unauthorized user")
                 return
             td = datetime.now(timezone.utc) - self.last_check
+
             def desc(id: int):
-                chan = self.get_channel(id)
-                if isinstance(chan, DMChannel):
-                    return f"DM with {chan.recipient}"
-                elif isinstance(chan, GroupChannel):
-                    return f"Group DM{f' named {chan.name}' if chan.name else ''} with [{', '.joined(map(lambda user: user.name, chan.recipients))}]"
-                else:
-                    return f"{chan.name} in {chan.guild.name}"
+                # This should work, but it doesn't for some reason
+                # chan = self.get_channel(id)
+                # if isinstance(chan, DMChannel):
+                #     return f"DM with {chan.recipient}"
+                # elif isinstance(chan, GroupChannel):
+                #     return f"Group DM{f' named {chan.name}' if chan.name else ''} with [{', '.joined(map(lambda user: user.name, chan.recipients))}]"
+                # else:
+                #     return f"#{chan.name} in {chan.guild.name}"
+                return f"<#{id}>"
             s = f"""
 **Status:**
 Time since last check: {td}
 Estimated time until next check (approximate): {timedelta(seconds=RSS_FETCH_INTERVAL - td.total_seconds())}
-Feeds being watched: {self.feeds.keys()}
-Channels with feeds: [{', '.join(map(desc, [item for sublist in self.feeds.values() for item in sublist]))}]
+Feeds being watched: {list(self.feeds.keys())}
+Channels with feeds: {', '.join(map(desc, [item for sublist in self.feeds.values() for item in sublist]))}
 """
             await say(message, s, 1)
         elif cmd == "forcerefresh":
