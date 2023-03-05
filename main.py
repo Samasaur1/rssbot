@@ -171,6 +171,9 @@ class RssBot(Client):
         if not self.user.mentioned_in(message):
             return
 
+        if "<@1080989856248893521>" not in message.content:
+            return  # A reply to us that doesn't tag us
+
         if isinstance(message.channel, DMChannel):
             def log(s: str):
                 print(f"[{datetime.now(timezone.utc).isoformat()}] {s} in DM with {message.author} ({message.channel.id})")
