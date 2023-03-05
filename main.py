@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone, timedelta
 import hashlib
 from asyncio import sleep, create_task
@@ -54,6 +55,14 @@ class Entry:
 
 
 class FeedData:
+    @classmethod
+    def from_dict(cls, **kwargs):
+        self = cls(kwargs['url'])
+        self.etag = kwargs['etag']
+        self.modified = kwargs['modified']
+        self.previous_entry = Entry(kwargs['previous_entry'])
+        return self
+
     def __init__(self, url: str):
         self.url: str = url
         self.etag: Optional[str] = None
@@ -122,11 +131,18 @@ async def say(message: Message, msg: str, maxrange: int = 3) -> None:
 
 
 class RssBot(Client):
-    def __init__(self, channel_id: int, feeds: List[str], **options) -> None:
+    def __init__(self, feeds: Dict[str, List[int]], feed_data: Dict[str, FeedData], **options) -> None:
         super().__init__(intents=Intents(guilds=True, messages=True), **options)
-        self.feeds = {feed: [channel_id] for feed in feeds}
-        self.feed_data: Dict[str, FeedData] = {feed: FeedData(feed) for feed in feeds}
+        self.feeds: Dict[str, List[int]] = feeds
+        self.feed_data: Dict[str, FeedData] = feed_data
         self.task = None
+
+    def dump_feeds_to_file(self):
+        print("Updating dump files")
+        with open("feeds.json", "w") as file:
+            json.dump(self.feeds, file, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+        with open("feeddata.json", "w") as file:
+            json.dump(self.feed_data, file, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
     async def update_status(self) -> None:
         feed_count = len(self.feeds)
@@ -178,16 +194,22 @@ class RssBot(Client):
             log(f"Request to add '{url}'")
             if url in self.feeds:
                 if message.channel.id in self.feeds[url]:
+                    print("Already watching feed in channel")
                     await say(message, f"Already watching {url} in this channel")
                 else:
                     self.feeds[url].append(message.channel.id)
+                    print("Now watching feed (existing feed)")
+                    self.dump_feeds_to_file()
                     await say(message, f"Now watching {url} in this channel")
             else:
                 if validators.url(url):
                     self.feeds[url] = [message.channel.id]
+                    print("Now watching feed (new feed)")
+                    self.dump_feeds_to_file()
                     await self.update_status()
                     await say(message, f"Now watching {url} in this channel")
                 else:
+                    print("Invalid URL")
                     await say(message, f"Not a valid URL")
         elif cmd == "remove":
             url = _msg[1]
@@ -199,6 +221,7 @@ class RssBot(Client):
                     del self.feeds[url]
                     print("Was last url for feed, so feed is removed")
                     await self.update_status()
+                self.dump_feeds_to_file()
                 await say(message, f"Removed {url} from the feeds for this channel")
             else:
                 await say(message, f"Could not find {url} in the feeds for this channel")
@@ -235,6 +258,7 @@ To list all feeds in this channel, try "<@1080989856248893521> list"
 Time since last check: {td}
 Estimated time until next check (approximate): {timedelta(seconds=RSS_FETCH_INTERVAL - td.total_seconds())}
 Channels watching feed(s): {self.feeds.__repr__()}
+Last update to dump files:
 """
             await say(message, s, 1)
         elif cmd == "dump":
@@ -306,6 +330,23 @@ Channels watching feed(s): {self.feeds.__repr__()}
 if __name__ == "__main__":
     token = environ["DISCORD_TOKEN"]
     print("loaded configuration from environment...")
+    print("searching for feed files in working directory")
+    try:
+        with open("feeds.json", "r") as file:
+            feeds = json.load(file)
+            print("...loaded feeds")
+    except:
+        print("...feeds not found")
+        feeds = {}
+    try:
+        with open("feeddata.json", "r") as file:
+            feed_data = json.load(file)
+            print("...loaded feed data")
+    except:
+        print("...feed data not found")
+        feed_data = {}
+    print(feed_data)
+    feed_data = {feed: FeedData.from_dict(**feed_data[feed]) for feed in feed_data.keys()}
+    print(feed_data)
     print("connecting to Discord...")
-    # RssBot(1080991601502986331, ["https://samasaur1.github.io/feed.xml", "https://eclecticlight.co/category/updates/feed/atom/"]).run(token)
-    RssBot(1080991601502986331, []).run(token)
+    RssBot(feeds, feed_data).run(token)
