@@ -348,8 +348,6 @@ if __name__ == "__main__":
     except:
         print("...feed data not found")
         feed_data = {}
-    print(feed_data)
     feed_data = {feed: FeedData.from_dict(**feed_data[feed]) for feed in feed_data.keys()}
-    print(feed_data)
     print("connecting to Discord...")
     RssBot(feeds, feed_data).run(token)
