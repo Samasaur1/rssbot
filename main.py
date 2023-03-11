@@ -315,6 +315,7 @@ Channels with feeds: {', '.join(map(desc, [item for sublist in self.feeds.values
                     print(f"Unexpected {err=}, {type(err)=}")
                     raise
 
+            self.dump_feeds_to_file()
             await sleep(RSS_FETCH_INTERVAL)
             # await sleep(45) #45 seconds
 
