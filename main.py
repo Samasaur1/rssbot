@@ -138,7 +138,7 @@ class RssBot(Client):
         self.task = None
 
     def dump_feeds_to_file(self):
-        print("Updating dump files")
+        verbose("Updating dump files")
         with open("feeds.json", "w") as file:
             json.dump(self.feeds, file, default=lambda o: o.__dict__, sort_keys=True, indent=4)
         with open("feeddata.json", "w") as file:
@@ -345,6 +345,7 @@ Channels with feeds: {', '.join(map(desc, [item for sublist in self.feeds.values
 if __name__ == "__main__":
     token = environ["DISCORD_TOKEN"]
     print("loaded configuration from environment...")
+    print(f"...verbose={'VERBOSE' in environ.keys()}")
     print("searching for feed files in working directory")
     try:
         with open("feeds.json", "r") as file:
