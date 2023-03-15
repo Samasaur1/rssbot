@@ -250,6 +250,9 @@ To add a feed, try "<@1080989856248893521> add https://samasaur1.github.io/feed.
 To remove a feed, try "<@1080989856248893521> remove https://samasaur1.github.io/feed.xml"
 To list all feeds in this channel, try "<@1080989856248893521> list"
 """, 5)
+        elif cmd == "oob":
+            log(f"Request to oob")
+            await say(message, "<@937855314290692187>") #@oobot
         elif cmd == "status":
             log(f"Request for status")
             if message.author.id != 377776843425841153:
