@@ -285,6 +285,12 @@ Channels with feeds: {', '.join(map(desc, [item for sublist in self.feeds.values
                 return
             self.schedule_updates()
         else:
+            if cmd == "hello" and message.author.id == 268838716259172374:
+                await say(message, "Hi, Alex!")
+                return
+            if message.author.id == 268838716259172374:
+                await say(message, "sorry. bestie, i don't understand")
+                return
             log(f"Unknown command")
             await say(message, "Unknown command (try \"<@1080989856248893521> help\")")
 
