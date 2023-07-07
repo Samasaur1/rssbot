@@ -288,6 +288,30 @@ Channels with feeds: {', '.join(map(desc, [item for sublist in self.feeds.values
                 await say(message, "Unauthorized user")
                 return
             self.schedule_updates()
+        elif cmd == "prune":
+            log("Request to prune")
+            if message.author.id != 377776843425841153:
+                await say(message, "Unauthorized user")
+                return
+            pruned_channels = set()
+            pruned_feeds = set()
+            needs_status_update = False
+            for feed in self.feeds:
+                for channel_id in self.feeds[feed]:
+                    if self.get_channel(channel_id) is None:
+                        self.feeds[feed].remove(channel_id)
+                        pruned_channels.add(channel_id)
+                if len(self.feeds[feed]) == 0:
+                    pruned_feeds.add(feed)
+                    needs_status_update = True
+            for feed in pruned_feeds:
+                del self.feeds[feed]
+            verbose(f"Pruned [{', '.join((str(x) for x in pruned_channels))}]")
+            if needs_status_update:
+                verbose(f"...which pruned [{', '.join(pruned_feeds)}]")
+            pc = f"{len(pruned_channels)} channel{'s' if len(pruned_channels) != 1 else ''}"
+            pf = f", {len(pruned_feeds)} feed{'s' if len(pruned_feeds) != 1 else ''}" if needs_status_update else ""
+            await say(message, f"Pruned {pc}{pf}")
         else:
             if cmd == "hello" and message.author.id == 268838716259172374:
                 await say(message, "Hi, Alex!")
