@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import datetime, timezone, timedelta
 import hashlib
 from asyncio import sleep, create_task
@@ -137,6 +138,9 @@ class RssBot(Client):
         self.feed_data: Dict[str, FeedData] = feed_data
         self.task = None
 
+    async def notify(self, msg: str) -> None:
+        await self.get_channel(int(os.getenv('DEBUG_CHANNEL', 1080991601502986331))).send(msg)
+
     def dump_feeds_to_file(self):
         verbose("Updating dump files")
         with open("feeds.json", "w") as file:
@@ -159,7 +163,7 @@ class RssBot(Client):
 
         await self.update_status()
 
-        await self.get_channel(1080991601502986331).send("Now running")
+        await self.notify("Now running")
 
     async def on_message(self, message: Message) -> None:
         """Called when a message is sent."""
@@ -243,7 +247,7 @@ class RssBot(Client):
 **Feeds in this channel**:
 {fstr}
 """, 5)
-        elif cmd == "help":
+        elif cmd == "help" or cmd == "-h":
             log(f"Request for help")
             await say(message, """
 To add a feed, try "<@1080989856248893521> add https://samasaur1.github.io/feed.xml"
@@ -316,6 +320,11 @@ Channels with feeds: {', '.join(map(desc, [item for sublist in self.feeds.values
 
                     for channel_id in self.feeds[feed]:
                         channel = self.get_channel(channel_id)
+                        if not channel:
+                            # Consider automatically removing this channel?
+                            print(f"ERR: Cannot get channel <#{channel_id}> to update {feed}")
+                            await self.notify(f"Error! Cannot get channel <#{channel_id}> to update {feed}")
+                            continue
                         async with channel.typing():
                             await sleep(randrange(1, 3))
                             for entry in entries:
@@ -355,6 +364,7 @@ if __name__ == "__main__":
     token = environ["DISCORD_TOKEN"]
     print("loaded configuration from environment...")
     print(f"...verbose={'VERBOSE' in environ.keys()}")
+    print(f"...debug channel={os.getenv('DEBUG_CHANNEL', '1080991601502986331 (default)')}")
     print("searching for feed files in working directory")
     try:
         with open("feeds.json", "r") as file:
