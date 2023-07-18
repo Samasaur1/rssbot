@@ -83,6 +83,13 @@ class FeedData:
             #     d = feedparser.parse(self.url, etag=self.etag)
             # else:
             #     d = feedparser.parse(self.url, modified=self.modified)
+            if not hasattr(d, "status"):
+                print("ERR: no status attribute")
+                print(self.url)
+                print(self.previous_entry)
+                print(self.etag)
+                print(self.modified)
+                print(d)
             if d.status == 304:
                 verbose("status 304")
                 return []
