@@ -355,6 +355,7 @@ Channels with feeds: {', '.join(map(desc, [item for sublist in self.feeds.values
                                 await channel.send(f"New post from {feed}:\n{entry.output()}")
                 except Exception as err:
                     print(f"Unexpected {err=}, {type(err)=}")
+                    await self.notify(f"Unexpected {err=}, {type(err)=}")
                     raise
 
             self.dump_feeds_to_file()
