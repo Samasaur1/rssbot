@@ -344,7 +344,7 @@ Channels with feeds: {', '.join(map(desc, [item for sublist in self.feeds.values
                         self.feed_data[feed].new_entries()
                         # Assume that newly-added blogs have had all their posts read already
                     entries = self.feed_data[feed].new_entries()
-                    if not entries:
+                    if entries is None:
                         await self.notify(f"Error! Feed {feed} could not be reached!")
                         continue
                     verbose(f"{len(entries)} entries")
