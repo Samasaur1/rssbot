@@ -90,6 +90,7 @@ class FeedData:
                 print(self.etag)
                 print(self.modified)
                 print(d)
+                return None
             if d.status == 304:
                 verbose("status 304")
                 return []
@@ -343,6 +344,9 @@ Channels with feeds: {', '.join(map(desc, [item for sublist in self.feeds.values
                         self.feed_data[feed].new_entries()
                         # Assume that newly-added blogs have had all their posts read already
                     entries = self.feed_data[feed].new_entries()
+                    if not entries:
+                        await self.notify(f"Error! Feed {feed} could not be reached!")
+                        continue
                     verbose(f"{len(entries)} entries")
                     if len(entries) == 0:
                         continue
