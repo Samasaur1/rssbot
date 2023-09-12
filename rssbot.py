@@ -78,11 +78,21 @@ class FeedData:
             verbose("no prev entry")
         if self.etag or self.modified:
             verbose("etag/modified")
-            d = feedparser.parse(self.url, etag=self.etag, modified=self.modified)
-            # if self.etag:
-            #     d = feedparser.parse(self.url, etag=self.etag)
-            # else:
-            #     d = feedparser.parse(self.url, modified=self.modified)
+            try:
+                d = feedparser.parse(self.url, etag=self.etag, modified=self.modified)
+            except:
+                print("ERR: feedparser.parse errored!")
+                print(self.url)
+                print(self.previous_entry)
+                print(self.etag)
+                print(self.modified)
+                return None
+            if d is None:
+                print("ERR: d is None")
+                print(self.url)
+                print(self.previous_entry)
+                print(self.etag)
+                print(self.modified)
             if not hasattr(d, "status"):
                 print("ERR: no status attribute")
                 print(self.url)
