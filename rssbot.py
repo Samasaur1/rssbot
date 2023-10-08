@@ -331,12 +331,16 @@ Channels with feeds: {', '.join(map(desc, [item for sublist in self.feeds.values
             pf = f", {len(pruned_feeds)} feed{'s' if len(pruned_feeds) != 1 else ''}" if needs_status_update else ""
             await say(message, f"Pruned {pc}{pf}")
         else:
-            if cmd == "hello" and message.author.id == 268838716259172374:
-                await say(message, "Hi, Alex!")
-                return
             if message.author.id == 268838716259172374:
-                await say(message, "sorry. bestie, i don't understand")
-                return
+                if cmd.startswith("hi") or cmd == "hello" or cmd == "hey":
+                    await say(message, "hi alex!")
+                    return
+                elif cmd == "ily":
+                    await say(message, "ily too!")
+                    return
+                else:
+                    await say(message, "sorry, bestie, i don't understand")
+                    return
             log(f"Unknown command")
             await say(message, "Unknown command (try \"<@1080989856248893521> help\")")
 
