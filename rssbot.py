@@ -7,6 +7,7 @@ from os import environ
 from random import randrange
 from typing import List, Optional, Dict
 
+import discord.utils
 import feedparser
 import validators
 from discord import Client, Intents, Message, Status, ActivityType, Activity, DMChannel, GroupChannel
@@ -330,6 +331,33 @@ Channels with feeds: {', '.join(map(desc, [item for sublist in self.feeds.values
             pc = f"{len(pruned_channels)} channel{'s' if len(pruned_channels) != 1 else ''}"
             pf = f", {len(pruned_feeds)} feed{'s' if len(pruned_feeds) != 1 else ''}" if needs_status_update else ""
             await say(message, f"Pruned {pc}{pf}")
+        elif cmd == "reactwith":
+            log("Request to add reaction to message")
+            if message.author.id != 377776843425841153:
+                await say(message, "Unauthorized user")
+                return
+            print(msg)
+            args = [x for x in _msg[1].split(" ") if x != ""]
+            if len(args) < 2:
+                await say(message, "Missing arguments")
+                return
+
+            if len(args) == 2:
+                chan = message.channel
+            else: #len(args) == 3:
+                chan = self.get_channel(int(args[2]))
+            verbose(f"Got channel {chan} with name {chan.name if chan.name else '{}'}")
+
+            if args[0].startswith("<:") and args[0].endswith(">"):
+                react_emoji = args[0]
+            elif all(ord(c) < 128 for c in args[0]):
+                react_emoji = discord.utils.get(chan.guild.emojis, name=args[0])
+            else:
+                react_emoji = args[0]
+            verbose(f"Got emoji {react_emoji} with name {args[0]}")
+            react_message = await chan.fetch_message(int(args[1]))
+            verbose(f"Got message {react_message} with id {args[1]}")
+            await react_message.add_reaction(react_emoji)
         else:
             if message.author.id == 268838716259172374:
                 if cmd.startswith("hi") or cmd == "hello" or cmd == "hey":
