@@ -323,6 +323,7 @@ To get help about filters, try "<@1080989856248893521> filter help"
                 if feed not in self.feeds:
                     print("Feed not in channel")
                     await say(message, "That feed does not exist in this channel, so it cannot have filters")
+                    return
                 if len(self.feeds[feed][message.channel.id]) == 0:
                     await say(message, "No filters on feed in this channel")
                     return
@@ -336,6 +337,7 @@ To get help about filters, try "<@1080989856248893521> filter help"
                 if feed not in self.feeds:
                     print("Feed not in channel")
                     await say(message, "That feed does not exist in this channel, so it cannot have filters")
+                    return
                 if new_filter in self.feeds[feed][message.channel.id]:
                     print("Filter already exists on feed in channel")
                     await say(message, "Filter already exists on that feed in this channel")
@@ -351,6 +353,7 @@ To get help about filters, try "<@1080989856248893521> filter help"
                 if feed not in self.feeds:
                     print("Feed not in channel")
                     await say(message, "That feed does not exist in this channel, so it cannot have filters")
+                    return
                 if old_filter in self.feeds[feed][message.channel.id]:
                     self.feeds[feed][message.channel.id].remove(old_filter)
                     print("Found")
