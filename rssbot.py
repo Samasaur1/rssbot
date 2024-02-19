@@ -390,7 +390,7 @@ To add a filter on a feed, try "<@1080989856248893521> filter remove https://sam
                 return
             self.global_filters.remove(_msg[1])
             await say(message, "Uncensored all posts matching filter")
-        elif cmd == "censorlist":
+        elif cmd == "censorship":
             log("Request to list global filters")
             if message.author.id != self.ADMIN_UID:
                 await say(message, "Unauthorized user")
