@@ -149,6 +149,13 @@ async def say(message: Message, msg: str, maxrange: int = 3) -> None:
         await sleep(sleep_time)
         await message.reply(msg)
 
+def censored_by(entry, filters):
+    output = entry.output()
+    for f in filters:
+        if f in output:
+            verbose(f"entry {output} censored by {f}")
+            return True
+    return False
 
 def migration(feeds):
     # migrate from Dict[str, List[int]] to Dict[str, Dict[int, List[str]]]
@@ -174,7 +181,7 @@ def migration(feeds):
             #     if not isinstance(filters, list):
             #         continue
             # return
-            processed_feeds[k] = { int(channel): [f for f in filters if isinstance(f, str)] for channel, filters in v.items() if (isinstance(channel, int) or isinstance(channel, str)) and isinstance(filters, list)}
+            processed_feeds[k] = {int(channel): [f for f in filters if isinstance(f, str)] for channel, filters in v.items() if (isinstance(channel, int) or isinstance(channel, str)) and isinstance(filters, list)}
     return processed_feeds
 
 class RssBot(Client):
@@ -262,7 +269,7 @@ class RssBot(Client):
                     await say(message, f"Now watching {url} in this channel")
             else:
                 if validators.url(url):
-                    self.feeds[url] = { message.channel.id: [] }
+                    self.feeds[url] = {message.channel.id: []}
                     print("Now watching feed (new feed)")
                     self.dump_feeds_to_file()
                     await self.update_status()
@@ -274,7 +281,7 @@ class RssBot(Client):
             url = _msg[1]
             log(f"Request to remove '{url}'")
             if url in self.feeds and message.channel.id in self.feeds[url]:
-                del self.feeds[url][message.channel_id]
+                del self.feeds[url][message.channel.id]
                 print("Found")
                 if len(self.feeds[url]) == 0:
                     del self.feeds[url]
@@ -290,7 +297,7 @@ class RssBot(Client):
             feeds_in_channel = []
             for feed in self.feeds:
                 if message.channel.id in self.feeds[feed]:
-                    feeds_in_channel.append(f"{feed} (filters: {len(self.feeds[feed][message.channel_id])})")
+                    feeds_in_channel.append(f"{feed} (filters: {len(self.feeds[feed][message.channel.id])})")
             if len(feeds_in_channel) == 0:
                 await say(message, "No feeds in this channel")
                 return
@@ -308,35 +315,32 @@ To list all feeds in this channel, try "<@1080989856248893521> list"
 To get help about filters, try "<@1080989856248893521> filter help"
 """, 5)
         elif cmd == "filter":
-            submsg = _msg.split(" ", maxsplit=2)
+            submsg = _msg[1].split(" ", maxsplit=2)
             subcmd = submsg[0]
             if subcmd == "list":
                 feed = submsg[1]
                 log(f"Request to list filters on '{feed}'")
-                if not feed in self.feeds:
+                if feed not in self.feeds:
                     print("Feed not in channel")
                     await say(message, "That feed does not exist in this channel, so it cannot have filters")
-                if len(self.feeds[feed][message.channel_id]) == 0:
+                if len(self.feeds[feed][message.channel.id]) == 0:
                     await say(message, "No filters on feed in this channel")
                     return
-                output = ""
-                # for idx, filter in enumerate(self.feeds[feed][message.channel_id]):
+                # for idx, filter in enumerate(self.feeds[feed][message.channel.id]):
                 #     output.append(f"{idx}: `{filter}`")
-                for f in self.feeds[feed][message.channel_id]:
-                    output.append(f"- `{filter}`\n")
-                await say(message, output)
+                await say(message, '\n'.join([f"- `{f}`" for f in self.feeds[feed][message.channel.id]]))
             elif subcmd == "add":
                 feed = submsg[1]
                 new_filter = submsg[2]
                 log(f"Request to add filter `{new_filter}` on '{feed}'")
-                if not feed in self.feeds:
+                if feed not in self.feeds:
                     print("Feed not in channel")
                     await say(message, "That feed does not exist in this channel, so it cannot have filters")
-                if new_filter in self.feeds[feed][message.channel_id]:
+                if new_filter in self.feeds[feed][message.channel.id]:
                     print("Filter already exists on feed in channel")
                     await say(message, "Filter already exists on that feed in this channel")
                 else:
-                    self.feeds[feed][message.channel_id].append(new_filter)
+                    self.feeds[feed][message.channel.id].append(new_filter)
                     print("Filter added")
                     self.dump_feeds_to_file()
                     await say(message, "Filter now applies to that feed in this channel")
@@ -344,11 +348,11 @@ To get help about filters, try "<@1080989856248893521> filter help"
                 feed = submsg[1]
                 old_filter = submsg[2]
                 log(f"Request to remove filter `{old_filter}` on '{feed}'")
-                if not feed in self.feeds:
+                if feed not in self.feeds:
                     print("Feed not in channel")
                     await say(message, "That feed does not exist in this channel, so it cannot have filters")
-                if old_filter in self.feeds[feed][message.channel_id]:
-                    self.feeds[feed][message.channel_id].remove(old_filter)
+                if old_filter in self.feeds[feed][message.channel.id]:
+                    self.feeds[feed][message.channel.id].remove(old_filter)
                     print("Found")
                     self.dump_feeds_to_file()
                     await say(message, "Filter no longer applies to that feed in this channel")
@@ -358,11 +362,11 @@ To get help about filters, try "<@1080989856248893521> filter help"
             elif subcmd == "help":
                 log("Request for filter help")
                 await say(message, """
-                **Filters** are strings, configurable per feed by channel. If a new post matches any of the existing filters, the post will not be posted in that channel.
-                To list filters on a feed (in the current channel), try "<@1080989856248893521> filter list https://samasaur1.github.io/feed.xml".
-                To add a filter on a feed, try "<@1080989856248893521> filter add https://samasaur1.github.io/feed.xml some multi-word filter I don't want to see posts about" (no quotes are required)
-                To add a filter on a feed, try "<@1080989856248893521> filter remove https://samasaur1.github.io/feed.xml some filter I once added, but now want to see posts about again" (no quotes are required)
-                """, 5)
+**Filters** are strings, configurable per feed by channel. If a new post matches any of the existing filters, the post will not be posted in that channel.
+To list filters on a feed (in the current channel), try "<@1080989856248893521> filter list https://samasaur1.github.io/feed.xml".
+To add a filter on a feed, try "<@1080989856248893521> filter add https://samasaur1.github.io/feed.xml some multi-word filter I don't want to see posts about" (no quotes are required)
+To add a filter on a feed, try "<@1080989856248893521> filter remove https://samasaur1.github.io/feed.xml some filter I once added, but now want to see posts about again" (no quotes are required)
+""", 5)
             else:
                 log("Unknown filter subcommand")
                 await say(message, "Unknown subcommand (try \"<@1080989856248893521> filter help\")")
@@ -472,6 +476,10 @@ Channels with feeds: {', '.join({desc(channel) for channels in self.feeds.values
             react_message = await chan.fetch_message(int(args[1]))
             verbose(f"Got message {react_message} with id {args[1]}")
             await react_message.add_reaction(react_emoji)
+        elif cmd == "sudo":
+            if message.author.id == self.ADMIN_UID:
+                return
+            await say(message, f"'{message.author}' is not in the sudoers file. This incident will be reported.")
         else:
             if message.author.id == 268838716259172374:
                 if cmd.startswith("hi") or cmd == "hello" or cmd == "hey":
@@ -486,13 +494,6 @@ Channels with feeds: {', '.join({desc(channel) for channels in self.feeds.values
             log(f"Unknown command")
             await say(message, "Unknown command (try \"<@1080989856248893521> help\")")
 
-    def censored_by(entry, filters):
-        output = entry.output()
-        for f in filters:
-            if f in output:
-                verbose(f"entry {output} censored by {f}")
-                return True
-        return False
     def schedule_updates(self) -> None:
         async def task():
             # await sleep(15)
@@ -510,7 +511,7 @@ Channels with feeds: {', '.join({desc(channel) for channels in self.feeds.values
                     if original_entries is None:
                         await self.notify(f"Error! Feed {feed} could not be reached!")
                         continue
-                    verbose(f"{len(entries)} entries")
+                    verbose(f"{len(original_entries)} entries")
                     entries = [entry for entry in original_entries if not censored_by(entry, self.global_filters)]
                     verbose(f"{len(entries)} entries (post-censorship)")
                     if len(entries) == 0:
