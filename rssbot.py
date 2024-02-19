@@ -178,11 +178,12 @@ def migration(feeds):
     return processed_feeds
 
 class RssBot(Client):
-    def __init__(self, feeds: Dict[str, Dict[int, List[str]]], feed_data: Dict[str, FeedData], **options) -> None:
+    def __init__(self, feeds: Dict[str, Dict[int, List[str]]], feed_data: Dict[str, FeedData], global_filters: List[str], **options) -> None:
         super().__init__(intents=Intents(guilds=True, messages=True), **options)
         # { feed -> { channel -> [ filter ] } }
         self.feeds: Dict[str, Dict[int, List[str]]] = migration(feeds)
         self.feed_data: Dict[str, FeedData] = feed_data
+        self.global_filters: List[str] = global_filters
         self.task = None
         self.ADMIN_UID = int(os.getenv('ADMIN_UID', 377776843425841153))
         self.DEBUG_CHANNEL = int(os.getenv('DEBUG_CHANNEL', 1080991601502986331))
@@ -196,6 +197,8 @@ class RssBot(Client):
             json.dump(self.feeds, file, default=lambda o: o.__dict__, sort_keys=True, indent=4)
         with open("feeddata.json", "w") as file:
             json.dump(self.feed_data, file, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+        with open("filters.json", "w") as file:
+            json.dump(self.global_filters, file, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
     async def update_status(self) -> None:
         feed_count = len(self.feeds)
@@ -366,6 +369,26 @@ To get help about filters, try "<@1080989856248893521> filter help"
         elif cmd == "oob":
             log(f"Request to oob")
             await say(message, "<@937855314290692187>") #@oobot
+        elif cmd == "censor":
+            log("Request to add global filter")
+            if message.author.id != self.ADMIN_UID:
+                await say(message, "Unauthorized user")
+                return
+            self.global_filters.append(_msg[1])
+            await say(message, "Censored all posts matching filter")
+        elif cmd == "uncensor":
+            log("Request to remove global filter")
+            if message.author.id != self.ADMIN_UID:
+                await say(message, "Unauthorized user")
+                return
+            self.global_filters.remove(_msg[1])
+            await say(message, "Uncensored all posts matching filter")
+        elif cmd == "censorlist":
+            log("Request to list global filters")
+            if message.author.id != self.ADMIN_UID:
+                await say(message, "Unauthorized user")
+                return
+            await say(message, ', '.join([f"`{x}`" for x in self.global_filters]))
         elif cmd == "status":
             log(f"Request for status")
             if message.author.id != self.ADMIN_UID:
@@ -424,7 +447,7 @@ Channels with feeds: {', '.join({desc(channel) for channels in self.feeds.values
             await say(message, f"Pruned {pc}{pf}")
         elif cmd == "reactwith":
             log("Request to add reaction to message")
-            if message.author.id != 377776843425841153:
+            if message.author.id != self.ADMIN_UID:
                 await say(message, "Unauthorized user")
                 return
             print(msg)
@@ -483,11 +506,13 @@ Channels with feeds: {', '.join({desc(channel) for channels in self.feeds.values
                         self.feed_data[feed] = FeedData(feed)
                         self.feed_data[feed].new_entries()
                         # Assume that newly-added blogs have had all their posts read already
-                    entries = self.feed_data[feed].new_entries()
-                    if entries is None:
+                    original_entries = self.feed_data[feed].new_entries()
+                    if original_entries is None:
                         await self.notify(f"Error! Feed {feed} could not be reached!")
                         continue
                     verbose(f"{len(entries)} entries")
+                    entries = [entry for entry in original_entries if not censored_by(entry, self.global_filters)]
+                    verbose(f"{len(entries)} entries (post-censorship)")
                     if len(entries) == 0:
                         continue
                     for entry in entries:
@@ -562,6 +587,13 @@ if __name__ == "__main__":
     except:
         print("...feed data not found")
         feed_data = {}
+    try:
+        with open("filters.json", "r") as file:
+            filters = json.load(file)
+            print("...loaded global filters")
+    except:
+        print("...global filters not found")
+        filters = []
     feed_data = {feed: FeedData.from_dict(**feed_data[feed]) for feed in feed_data.keys()}
     print("connecting to Discord...")
-    RssBot(feeds, feed_data).run(token)
+    RssBot(feeds, feed_data, filters).run(token)
