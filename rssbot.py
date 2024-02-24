@@ -438,8 +438,9 @@ Channels with feeds: {', '.join({desc(channel) for channels in self.feeds.values
             for feed in self.feeds:
                 for channel_id in self.feeds[feed]:
                     if self.get_channel(channel_id) is None:
-                        del self.feeds[feed][channel_id]
                         pruned_channels.add(channel_id)
+                for channel in pruned_channels:
+                    del self.feeds[feed][channel]
                 if len(self.feeds[feed]) == 0:
                     pruned_feeds.add(feed)
                     needs_status_update = True
