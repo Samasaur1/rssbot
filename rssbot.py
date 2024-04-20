@@ -273,7 +273,10 @@ class RssBot(Client):
                     print("Now watching feed (new feed)")
                     self.dump_feeds_to_file()
                     await self.update_status()
-                    await say(message, f"Now watching {url} in this channel")
+                    if url.endswith("/feed"):
+                        await say(message, f"om nom nom (now watching {url} in this channel)")
+                    else:
+                        await say(message, f"Now watching {url} in this channel")
                 else:
                     print("Invalid URL")
                     await say(message, f"Not a valid URL")
