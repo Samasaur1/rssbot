@@ -318,6 +318,10 @@ To list all feeds in this channel, try "<@1080989856248893521> list"
 To get help about filters, try "<@1080989856248893521> filter help"
 """, 5)
         elif cmd == "filter":
+            if len(_msg) == 1:
+                print("filter must have subcommand")
+                await say(message, "Filter must have a subcommand (try \"<@1080989856248893521> filter help\")")
+                return
             submsg = _msg[1].split(" ", maxsplit=2)
             subcmd = submsg[0]
             if subcmd == "list":
