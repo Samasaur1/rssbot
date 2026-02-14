@@ -10,4 +10,4 @@ RssBot requires discord.py, feedparser, and validators. If you have a version
 of [Nix](https://nixos.org) that supports flakes, you can build RssBot with
 `nix build` and run it with `nix run`.
 
-RssBot is a descendant of [oobot](https://github.com/InternetUnexplorer/oobot).
+RssBot is a descendant of [oobot](https://github.com/reed-cs-and-friends/oobot).
